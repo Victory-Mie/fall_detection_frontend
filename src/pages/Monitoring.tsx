@@ -1,0 +1,453 @@
+import { useState, useEffect, useRef } from "react";
+import {
+  Card,
+  Row,
+  Col,
+  Button,
+  Modal,
+  Input,
+  Space,
+  Typography,
+  message,
+  Alert,
+} from "antd";
+import { useThemeStore } from "../store/themeStore";
+import { settingsApi } from "../services/api";
+import { AudioOutlined, VideoCameraOutlined } from "@ant-design/icons";
+import { webSocketService } from "../services/websocket";
+
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+
+const Monitoring = () => {
+  const [isFallDetected, setIsFallDetected] = useState(false);
+  const [isEmergencyModalVisible, setIsEmergencyModalVisible] = useState(false);
+  const [userResponse, setUserResponse] = useState("");
+  const [aiResponse, setAiResponse] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const [isAssessing, setIsAssessing] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const countdownTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { notificationSettings, notifyEmergency } = useThemeStore();
+
+  // 不再需要从API获取通知设置，直接从本地存储获取
+  useEffect(() => {
+    // 组件初始化逻辑
+  }, []);
+
+  // Connect to WebSocket service
+  useEffect(() => {
+    // No longer need to simulate fall detection events since using a real WebSocket service now
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      if (countdownTimerRef.current) {
+        clearInterval(countdownTimerRef.current);
+        countdownTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Initialize video stream and WebSocket connection
+  useEffect(() => {
+    const initializeVideoStream = async () => {
+      try {
+        if (videoRef.current) {
+          await webSocketService.startVideoStream(videoRef.current);
+          message.success("Camera connected successfully");
+        }
+      } catch (error) {
+        console.error("Failed to access the camera:", error);
+        message.error(
+          "Failed to access the camera. Please check the permission settings"
+        );
+      }
+    };
+
+    initializeVideoStream();
+
+    // Listen for fall detection events
+    const handleFallDetectedEvent = (event: CustomEvent<any>) => {
+      const fallData = event.detail;
+      console.log("Received fall detection event:", fallData);
+
+      // Trigger fall handling with the detected data
+      handleFallDetection(fallData);
+    };
+
+    window.addEventListener(
+      "fallDetected",
+      handleFallDetectedEvent as EventListener
+    );
+
+    return () => {
+      webSocketService.stopVideoStream();
+      window.removeEventListener(
+        "fallDetected",
+        handleFallDetectedEvent as EventListener
+      );
+    };
+  }, []);
+
+  // Add a state to store the ID of the current fall event
+  const [currentFallId, setCurrentFallId] = useState<string>("");
+
+  const handleFallDetection = (fallData?: any) => {
+    setIsFallDetected(true);
+    setIsEmergencyModalVisible(true);
+
+    // If there is fall data, save the fall ID
+    if (fallData && fallData.fallId) {
+      setCurrentFallId(fallData.fallId);
+
+      // If there is bounding box data, it can be displayed on the UI
+      // Here, you can set the position of the bounding box according to fallData.boundingBox
+    }
+
+    // Start the countdown
+    countdownTimerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          // When the countdown ends, trigger the emergency alert
+          clearInterval(countdownTimerRef.current as NodeJS.Timeout);
+          triggerEmergencyAlert();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const triggerEmergencyAlert = () => {
+    // Only trigger the alert when the notification setting is on
+    if (notifyEmergency) {
+      message.error(
+        "Emergency alert triggered! Notifying emergency contacts..."
+      );
+
+      // Send the emergency alert via WebSocket
+      if (currentFallId) {
+        webSocketService.sendEmergencyAlert(currentFallId);
+      }
+
+      // You can add other emergency contact notification logic here
+    } else {
+      message.info(
+        "Notification setting is off. Emergency alert not triggered"
+      );
+    }
+  };
+
+  // Add a state to store the recording object
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null
+  );
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+
+      const chunks: Blob[] = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        setAudioChunks(chunks);
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      message.info("Start recording...");
+    } catch (error) {
+      console.error("Failed to access the microphone:", error);
+      message.error(
+        "Failed to access the microphone. Please check the permission settings"
+      );
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop());
+      setIsRecording(false);
+      message.info("Recording ended. Analyzing...");
+      setIsAssessing(true);
+
+      // In a real project, the recording data should be sent to the backend for speech recognition and AI analysis here
+      // Simulate processing the recording and getting the text
+      setTimeout(() => {
+        // Simulate the speech recognition result
+        const recognizedText =
+          "I fell down, but I can stand up. My right ankle hurts a bit";
+        setUserResponse(recognizedText);
+
+        // If there is a fall ID, send the user response
+        if (currentFallId) {
+          webSocketService.sendUserResponse(currentFallId, recognizedText);
+        }
+
+        // Simulate AI analysis
+        setTimeout(() => {
+          setAiResponse(
+            "According to your description, you may have a minor sprain. It is recommended that you keep it cold-compressed, elevate the injured part, and rest. If the pain persists or worsens, please seek medical attention immediately."
+          );
+          setIsAssessing(false);
+        }, 1000);
+      }, 1000);
+    }
+  };
+
+  const handleConfirmOk = () => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
+    }
+
+    // Cancel the emergency alert
+    if (currentFallId) {
+      webSocketService.cancelEmergencyAlert(currentFallId);
+    }
+
+    setIsEmergencyModalVisible(false);
+    setIsFallDetected(false);
+    setUserResponse("");
+    setAiResponse("");
+    setCountdown(30);
+    setCurrentFallId("");
+  };
+
+  return (
+    <div>
+      <Title level={2}>Real-time Monitoring</Title>
+
+      {isFallDetected && (
+        <Alert
+          message="Fall detection event detected!"
+          description="The system has detected a possible fall event. Please confirm your status."
+          type="error"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+      )}
+
+      <Row gutter={16}>
+        <Col span={16}>
+          <Card title="Monitoring Screen" bordered={false}>
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "500px",
+                background: "#000",
+              }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+              {isFallDetected && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    border: "4px solid red",
+                    boxSizing: "border-box",
+                    animation: "pulse 1.5s infinite",
+                  }}
+                />
+              )}
+            </div>
+          </Card>
+        </Col>
+        <Col span={8}>
+          <Card
+            title="Status Information"
+            bordered={false}
+            style={{ marginBottom: 16 }}
+          >
+            <p>
+              <strong>Monitoring Status:</strong>{" "}
+              {isFallDetected ? "Fall detected!" : "Normal"}
+            </p>
+            <p>
+              <strong>Camera:</strong> Connected
+            </p>
+            <p>
+              <strong>Microphone:</strong> Connected
+            </p>
+            <p>
+              <strong>AI Analysis:</strong> Enabled
+            </p>
+          </Card>
+
+          <Card title="Operations" bordered={false}>
+            <Space direction="vertical" style={{ width: "100%" }}>
+              <Button
+                type="primary"
+                icon={<VideoCameraOutlined />}
+                block
+                onClick={async () => {
+                  try {
+                    // Stop the current video stream first
+                    webSocketService.stopVideoStream();
+
+                    // Re-initialize the video stream
+                    if (videoRef.current) {
+                      await webSocketService.startVideoStream(videoRef.current);
+                      message.success("Camera reconnected successfully");
+                    }
+                  } catch (error) {
+                    console.error("Failed to reconnect the camera:", error);
+                    message.error(
+                      "Failed to reconnect the camera. Please check the permission settings"
+                    );
+                  }
+                }}
+              >
+                Reconnect Camera
+              </Button>
+              <Button
+                type="primary"
+                danger
+                block
+                onClick={() => {
+                  // Simulate a fall detection result
+                  const mockFallData = {
+                    isFallDetected: true,
+                    confidence: 0.85,
+                    boundingBox: {
+                      x: 120,
+                      y: 150,
+                      width: 200,
+                      height: 300,
+                    },
+                    timestamp: Date.now(),
+                    fallId: `mock-fall-${Date.now()}`,
+                  };
+
+                  // Call the handling function
+                  handleFallDetection(mockFallData);
+                  message.warning("Fall event simulated. Confidence: 85%");
+                }}
+              >
+                Simulate Fall Event
+              </Button>
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      <Modal
+        title={
+          <div
+            style={{
+              color: "red",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>Fall detection event detected!</span>
+            <span>
+              {countdown > 0 &&
+                `${countdown} seconds until the emergency alert will be automatically triggered`}
+            </span>
+          </div>
+        }
+        open={isEmergencyModalVisible}
+        onOk={handleConfirmOk}
+        onCancel={handleConfirmOk}
+        okText="I'm okay. Cancel the alert"
+        cancelText="Close"
+        width={700}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <Text strong>
+            Please describe your situation, or tell us your status using your
+            voice:
+          </Text>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <TextArea
+            rows={4}
+            value={userResponse}
+            onChange={(e) => setUserResponse(e.target.value)}
+            placeholder="For example: I fell down, but I can stand up. My right ankle hurts a bit..."
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <Space>
+            <Button
+              type="primary"
+              icon={<AudioOutlined />}
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              danger={isRecording}
+            >
+              {isRecording ? "Stop Recording" : "Start Voice Description"}
+            </Button>
+            <Button
+              type="primary"
+              loading={isAssessing}
+              onClick={() => {
+                if (!userResponse) return;
+
+                setIsAssessing(true);
+
+                // If there is a fall ID, send the user response
+                if (currentFallId) {
+                  webSocketService.sendUserResponse(
+                    currentFallId,
+                    userResponse
+                  );
+                }
+
+                // Simulate receiving the AI analysis result from the backend
+                // In a real project, this should be obtained via WebSocket or API call
+                setTimeout(() => {
+                  setAiResponse(
+                    "According to your description, you may have a minor sprain. It is recommended that you keep it cold-compressed, elevate the injured part, and rest. If the pain persists or worsens, please seek medical attention immediately."
+                  );
+                  setIsAssessing(false);
+                }, 2000);
+              }}
+              disabled={!userResponse && !isRecording}
+            >
+              Analyze My Status
+            </Button>
+          </Space>
+        </div>
+
+        {aiResponse && (
+          <Alert
+            message="AI Assessment Result"
+            description={aiResponse}
+            type="info"
+            showIcon
+          />
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+export default Monitoring;

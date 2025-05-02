@@ -211,7 +211,7 @@ const Dashboard = () => {
 
           <Col xs={24}>
             <Card
-              title="事件类型分布"
+              title="Distribution of Event Types"
               style={{
                 borderRadius: "8px",
                 height: "500px",

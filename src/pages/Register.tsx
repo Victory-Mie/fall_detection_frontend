@@ -1,8 +1,15 @@
 import { useState } from "react";
 import { Form, Input, Button, Card, Typography, message, Spin } from "antd";
-import { UserOutlined, LockOutlined, MailOutlined } from "@ant-design/icons";
+import {
+  UserOutlined,
+  LockOutlined,
+  MailOutlined,
+  SafetyOutlined,
+  HeartOutlined,
+} from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { userApi } from "../services/api";
+import "../styles/Auth.css";
 
 const { Title } = Typography;
 
@@ -44,24 +51,33 @@ const Register = () => {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        background: "#f0f2f5",
-        width: "100vw",
-      }}
-    >
+    <div className="auth-container">
+      {/* Animated background elements */}
+      <div className="bg-animation">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+
       <Spin spinning={loading}>
-        <Card style={{ width: 400, boxShadow: "0 4px 8px rgba(0,0,0,0.1)" }}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
+        <Card className="auth-card">
+          <div className="auth-header">
             <Title level={2}>Elderly Fall Detection System</Title>
-            <Title level={4}>User Registration</Title>
+            <Title level={4}>Join Our Community</Title>
+            <p>
+              Create your account to access our advanced fall detection system
+              designed to keep you and your loved ones safe and protected.
+            </p>
           </div>
 
-          <Form name="register" onFinish={onFinish} size="large">
+          <Form
+            name="register"
+            className="auth-form"
+            onFinish={onFinish}
+            size="large"
+          >
             <Form.Item
               name="username"
               rules={[
@@ -124,19 +140,16 @@ const Register = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                style={{ width: "100%" }}
-              >
+              <Button type="primary" htmlType="submit" className="auth-button">
                 Register
               </Button>
             </Form.Item>
 
-            <div style={{ textAlign: "center" }}>
+            <div className="auth-links">
               <span>Already have an account? </span>
               <Link to="/login">Log in now</Link>
             </div>
+
           </Form>
         </Card>
       </Spin>

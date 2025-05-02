@@ -109,18 +109,20 @@ const Monitoring = () => {
       // Here, you can set the position of the bounding box according to fallData.boundingBox
     }
 
-    // Start the countdown
-    countdownTimerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // When the countdown ends, trigger the emergency alert
-          clearInterval(countdownTimerRef.current as NodeJS.Timeout);
-          triggerEmergencyAlert();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // Only start the countdown if notifyEmergency is enabled
+    if (notifyEmergency) {
+      countdownTimerRef.current = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            // When the countdown ends, trigger the emergency alert
+            clearInterval(countdownTimerRef.current as NodeJS.Timeout);
+            triggerEmergencyAlert();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
   };
 
   const triggerEmergencyAlert = () => {
@@ -185,26 +187,63 @@ const Monitoring = () => {
       message.info("Recording ended. Analyzing...");
       setIsAssessing(true);
 
-      // In a real project, the recording data should be sent to the backend for speech recognition and AI analysis here
-      // Simulate processing the recording and getting the text
+      // In a real project, the recording data would be sent to the backend for speech recognition and AI analysis
+      // Here we simulate this process with the audioChunks data
       setTimeout(() => {
-        // Simulate the speech recognition result
-        const recognizedText =
-          "I fell down, but I can stand up. My right ankle hurts a bit";
-        setUserResponse(recognizedText);
+        if (audioChunks.length > 0) {
+          // Create a blob from the audio chunks
+          const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
 
-        // If there is a fall ID, send the user response
-        if (currentFallId) {
-          webSocketService.sendUserResponse(currentFallId, recognizedText);
-        }
+          // In a real implementation, we would send this blob to the backend
+          console.log(`Audio recording complete: ${audioBlob.size} bytes`);
 
-        // Simulate AI analysis
-        setTimeout(() => {
-          setAiResponse(
-            "According to your description, you may have a minor sprain. It is recommended that you keep it cold-compressed, elevate the injured part, and rest. If the pain persists or worsens, please seek medical attention immediately."
-          );
+          // Simulate sending the audio to the backend and getting a response
+          message.info("Sending audio to server for analysis...");
+
+          // Mock different responses based on random selection to simulate variety
+          const mockResponses = [
+            "I fell down, but I can stand up. My right ankle hurts a bit",
+            "I slipped and fell, but I'm okay. Just a little shaken",
+            "I fell from my chair, but I'm not hurt. I can get up on my own",
+            "I tripped and fell. My knee hurts and I might need some help",
+          ];
+
+          const recognizedText =
+            mockResponses[Math.floor(Math.random() * mockResponses.length)];
+          setUserResponse(recognizedText);
+
+          // If there is a fall ID, send the user response
+          if (currentFallId) {
+            // In a real implementation, we would send the audio blob along with the fall ID
+            webSocketService.sendUserResponse(currentFallId, recognizedText);
+          }
+
+          // Simulate AI analysis based on the recognized text
+          setTimeout(() => {
+            // Different AI responses based on the user's response
+            let aiResponseText = "";
+
+            if (
+              recognizedText.includes("hurt") ||
+              recognizedText.includes("pain")
+            ) {
+              aiResponseText =
+                "According to your description, you may have a minor injury. It is recommended that you keep the affected area cold-compressed, elevated, and rest. If the pain persists or worsens, please seek medical attention immediately.";
+            } else if (recognizedText.includes("help")) {
+              aiResponseText =
+                "Based on your situation, it seems you might need assistance. I've notified your emergency contacts. Try to remain calm and still until help arrives.";
+            } else {
+              aiResponseText =
+                "Based on your description, you appear to be okay. However, please monitor for any delayed symptoms such as dizziness, pain, or discomfort. Rest for a while and avoid sudden movements.";
+            }
+
+            setAiResponse(aiResponseText);
+            setIsAssessing(false);
+          }, 1500);
+        } else {
+          message.error("No audio data recorded. Please try again.");
           setIsAssessing(false);
-        }, 1000);
+        }
       }, 1000);
     }
   };
@@ -366,10 +405,11 @@ const Monitoring = () => {
             }}
           >
             <span>Fall detection event detected!</span>
-            <span>
-              {countdown > 0 &&
-                `${countdown} seconds until the emergency alert will be automatically triggered`}
-            </span>
+            {notifyEmergency && countdown > 0 && (
+              <span>
+                {`${countdown} seconds until the emergency alert will be automatically triggered`}
+              </span>
+            )}
           </div>
         }
         open={isEmergencyModalVisible}

@@ -80,7 +80,7 @@ const Dashboard = () => {
   const COLORS = ["#52c41a", "#faad14", "#f5222d"];
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, minHeight: "100vh" }}>
       <Card
         className="welcome-card"
         style={{

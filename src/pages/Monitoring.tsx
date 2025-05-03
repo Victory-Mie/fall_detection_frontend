@@ -222,7 +222,6 @@ const Monitoring = () => {
           setTimeout(() => {
             // Different AI responses based on the user's response
             let aiResponseText = "";
-
             if (
               recognizedText.includes("hurt") ||
               recognizedText.includes("pain")
@@ -398,17 +397,19 @@ const Monitoring = () => {
         title={
           <div
             style={{
+              padding: "0 20px 0 0",
               color: "red",
               display: "flex",
-              alignItems: "center",
               justifyContent: "space-between",
             }}
           >
-            <span>Fall detection event detected!</span>
+            <span>Fall detected!</span>
             {notifyEmergency && countdown > 0 && (
-              <span>
-                {`${countdown} seconds until the emergency alert will be automatically triggered`}
-              </span>
+              <div style={{ textAlign: "right" }}>
+                <div>If no action is taken, the emergency alert</div>
+                <div>{`will be
+                  automatically triggered in ${countdown} seconds.`}</div>
+              </div>
             )}
           </div>
         }
@@ -416,7 +417,7 @@ const Monitoring = () => {
         onOk={handleConfirmOk}
         onCancel={handleConfirmOk}
         okText="I'm okay. Cancel the alert"
-        cancelText="Close"
+        cancelText="Confirm"
         width={700}
       >
         <div style={{ marginBottom: 16 }}>

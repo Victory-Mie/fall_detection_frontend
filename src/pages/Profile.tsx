@@ -172,7 +172,7 @@ const Profile = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: "0 24px", minHeight: "100vh" }}>
       <Spin spinning={loading}>
         <Title level={2}>Personal Center</Title>
 

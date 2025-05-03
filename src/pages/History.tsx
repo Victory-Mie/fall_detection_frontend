@@ -178,7 +178,7 @@ const History = () => {
   ];
 
   return (
-    <div>
+    <div style={{minHeight:"100vh"}}>
       <Title level={2}>Fall Event History Records</Title>
 
       {/* <Card style={{ marginBottom: 16 }}>

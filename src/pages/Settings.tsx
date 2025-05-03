@@ -86,7 +86,7 @@ const Settings = () => {
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, minHeight: "100vh" }}>
       <Spin spinning={loading}>
         <Card>
           <Title level={3}>System Settings</Title>

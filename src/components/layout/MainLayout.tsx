@@ -100,7 +100,7 @@ const MainLayout = () => {
           }}
         >
           <AlertFilled style={{ marginRight: 8 }} />
-          {!collapsed && "Fall Detection"} {/* 未折叠时显示文字 */}
+          {!collapsed && "Community Guardian"} {/* 未折叠时显示文字 */}
         </div>
         <Menu
           theme="dark"

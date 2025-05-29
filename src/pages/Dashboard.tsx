@@ -104,9 +104,11 @@ const Dashboard = () => {
                 marginTop: 12,
               }}
             >
-              Our intelligent fall detection system is monitoring your health
-              and safety around the clock. Through advanced AI technology, we
-              can detect and respond to potential fall risks in a timely manner.
+              Our compassionate monitoring system is creating safer community
+              spaces for our seniors. Through thoughtful AI technology, we're
+              helping protect elderly community members in shared gathering
+              places, ensuring they can enjoy social connections with peace of
+              mind.
             </Paragraph>
           </Col>
           <Col xs={24} md={8} style={{ textAlign: "center" }}>

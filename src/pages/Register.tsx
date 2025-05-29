@@ -64,11 +64,14 @@ const Register = () => {
       <Spin spinning={loading}>
         <Card className="auth-card">
           <div className="auth-header">
-            <Title level={2}>Elderly Fall Detection System</Title>
-            <Title level={4}>Join Our Community</Title>
+            <Title level={2}>Community Guardian: Elderly Fall Detection</Title>
+            <Title level={4}>Join Our Caring Community</Title>
             <p>
-              Create your account to access our advanced fall detection system
-              designed to keep you and your loved ones safe and protected.
+              Create your account to be part of our community initiative that
+              helps protect seniors in public spaces. Our advanced technology
+              watches over community centers, parks, and shared living spaces to
+              ensure the well-being of our elderly neighbors when they gather
+              together.
             </p>
           </div>
 
@@ -149,7 +152,6 @@ const Register = () => {
               <span>Already have an account? </span>
               <Link to="/login">Log in now</Link>
             </div>
-
           </Form>
         </Card>
       </Spin>

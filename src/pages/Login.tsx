@@ -59,11 +59,12 @@ const Login = () => {
       <Spin spinning={loading}>
         <Card className="auth-card">
           <div className="auth-header">
-            <Title level={2}>Elderly Fall Detection System</Title>
+            <Title level={2}>Community Guardian: Elderly Fall Detection</Title>
             <Title level={4}>Welcome Back</Title>
             <p>
-              Your health and safety are our top priorities. Sign in to access
-              your personalized fall detection monitoring system.
+              Sign in to access our advanced monitoring system for detecting and
+              responding to elderly falls in public spaces such as parks,
+              community centers, and residential facilities.
             </p>
           </div>
 
